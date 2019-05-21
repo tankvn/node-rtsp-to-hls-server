@@ -8,14 +8,15 @@ const uniqueFilename = require('unique-filename');
 const path = require('path');
 const colors = require('colors/safe');
 
-const enableDebug = true;
+const enableDebug = true; // Enables console.log messages
 const serverPort = 8000;
-const transcodePath = 'transcoding-tmp/';
-const isWin = process.platform === 'win32';
-const selfDestructDuration = 60;
+const ffmpegPath = ''; // If empty, calls ffmpeg directly from your PATH
+const ffprobePath = ''; // if empty, calls ffprobe directly from your FFPROBE_PATH or PATH
+const transcodePath = 'transcoding-tmp/'; // Path for storing m3u8 and ts files
+const selfDestructDuration = 60; // Kill ffmpeg if no segment request is made in this duration
 const hlsSegmentDuration = 5;
-const hlsSegmentMaxGap = 3;
-const maxProcess = 3;
+const hlsSegmentMaxGap = 3; // Missing segment file count to trigger ffmpeg restart
+const maxProcess = 3; // Maximum stream to serve simultaneously
 const streams = {};
 
 if (!fs.existsSync(transcodePath)) {
@@ -27,13 +28,17 @@ if (!fs.existsSync(transcodePath)) {
   }
 }
 
-if (isWin) {
-  ffmpeg.setFfmpegPath('C://ffmpeg20190519/bin/ffmpeg.exe');
-  ffmpeg.setFfprobePath('C://ffmpeg20190519/bin/ffprobe.exe');
-}
-
 if (!enableDebug) {
   console.log = function noConsole() {};
+}
+
+if (ffmpegPath !== '') {
+  console.log(`Using ffmpeg: ${ffmpegPath}`);
+  ffmpeg.setFfmpegPath(ffmpegPath);
+}
+if (ffprobePath !== '') {
+  console.log(`Using ffprobe: ${ffprobePath}`);
+  ffmpeg.setFfprobePath(ffprobePath);
 }
 
 class Stream {
