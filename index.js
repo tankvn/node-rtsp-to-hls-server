@@ -142,8 +142,10 @@ class Stream {
     console.log(`Removing files (${this.streamIdentifier})`);
     const files = glob.sync(path.join(transcodePath, `${this.streamIdentifier}*`), {});
     for (let i = files.length - 1; i >= 0; i -= 1) {
-      fs.unlink(files[i], () => {
-        console.log(colors.red(`Error deleting file ${files[i]}`));
+      fs.unlink(files[i], (err) => {
+        if (err) {
+          console.log(colors.red(`Error deleting file ${files[i]}`));
+        }
       });
     }
   }
@@ -173,7 +175,7 @@ class Stream {
 
     while (duration > 0) {
       length = duration >= hlsSegmentDuration ? hlsSegmentDuration : duration;
-      content += `#EXTINF: ${length.toFixed(4)}, nodesc\r\n`;
+      content += `#EXTINF:${length.toFixed(4)}, nodesc\r\n`;
       content += `/segment.ts?file=${filename}${index}.ts\r\n`;
       duration -= length;
       index += 1;
@@ -301,6 +303,13 @@ class StreamSegmentPoller {
 http.createServer((req, res) => {
   const uri = url.parse(req.url).pathname;
   const { query } = url.parse(req.url, true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
 
   if (uri === '/watch.m3u8') {
     if (query.url) {
