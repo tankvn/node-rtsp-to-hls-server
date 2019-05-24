@@ -8,10 +8,12 @@ const uniqueFilename = require('unique-filename');
 const path = require('path');
 const colors = require('colors/safe');
 
+const isWin = process.platform === 'win32';
+
 const enableDebug = true; // Enables console.log messages
 const serverPort = 8000;
-const ffmpegPath = ''; // If empty, calls ffmpeg directly from your PATH
-const ffprobePath = ''; // if empty, calls ffprobe directly from your FFPROBE_PATH or PATH
+const ffmpegPath = isWin ? 'ffmpeg_build/ffmpeg.exe' : 'ffmpeg_build/ffmpeg'; // If empty, calls ffmpeg directly from your PATH
+const ffprobePath = isWin ? 'ffmpeg_build/ffprobe.exe' : 'ffmpeg_build/ffprobe'; // if empty, calls ffprobe directly from your FFPROBE_PATH or PATH
 const transcodePath = 'transcoding-tmp/'; // Path for storing m3u8 and ts files
 const selfDestructDuration = 60; // Kill ffmpeg if no segment request is made in this duration
 const hlsSegmentDuration = 5;
@@ -81,22 +83,29 @@ class Stream {
       }
 
       const outputOptions = [
-        '-c copy',
-        '-f hls',
-        /* '-copyts',
+        '-c:v copy',
+        '-c:a aac',
         '-avoid_negative_ts disabled',
-        '-start_at_zero', */
-        '-avoid_negative_ts 1',
-        '-vsync 0',
-        '-hls_flags +split_by_time+temp_file',
-        `-hls_time ${hlsSegmentDuration}`,
-        '-hls_segment_type mpegts',
-        `-start_number ${this.seekToSegment}`,
-        `-hls_segment_filename ${outputSegmentPath}`,
+        '-break_non_keyframes 1',
+        // '-bsf:v h264_mp4toannexb',
+        '-flags -global_header', // needed ?
+        '-vsync 0', // needed ?
+        '-f segment',
+        '-max_delay 0',
+        '-muxdelay 0',
+        '-segment_format mpegts',
+        '-segment_write_temp 1',
+        `-segment_time ${hlsSegmentDuration}`,
+        `-segment_start_number ${this.seekToSegment}`,
+        '-segment_list_type m3u8',
+        `-segment_list ${outputM3u8Path}`,
       ];
+      if (this.seekToSegment > 0) {
+        outputOptions.push(`-initial_offset ${this.seekToSegment * hlsSegmentDuration}`);
+      }
 
       this.process = ffmpeg(this.streamUrl);
-      this.process.inputOptions(inputOptions).addOptions(outputOptions).output(outputM3u8Path);
+      this.process.inputOptions(inputOptions).addOptions(outputOptions).output(outputSegmentPath);
       // eslint-disable-next-line consistent-return
       this.process.on('error', (err) => {
         if (!initialCallbackSent) {
