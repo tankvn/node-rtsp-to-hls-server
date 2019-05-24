@@ -248,14 +248,21 @@ class StreamSegmentPoller {
       let gapCheckMethod = 'M3U8';
       // Get last transcoded segment from ffmpeg's generat(ed)(ing) m3u8 file
       try {
-        const ffmpegM3u8Lines = fs.readFileSync(path.join(transcodePath, `${this.streamIdentifier}.m3u8`), 'utf-8').split('\n').filter(Boolean);
-        let count = 0;
-        let offset = 0;
-        for (let i = ffmpegM3u8Lines.length - 1; i >= 0; i -= 1) {
-          if (ffmpegM3u8Lines[i].match('^#EXTINF:[0-9]+')) count += 1;
-          if (ffmpegM3u8Lines[i].match('^#EXT-X-MEDIA-SEQUENCE')) offset = parseInt(ffmpegM3u8Lines[i].split(':')[1], 10);
+        const ffmpegM3u8File = fs.readFileSync(path.join(transcodePath, `${this.streamIdentifier}.m3u8`), 'utf-8');
+        const regex = new RegExp(`${this.streamIdentifier}([0-9]+).ts`, 'g');
+
+        let matches;
+        const output = [];
+        // eslint-disable-next-line no-cond-assign
+        while (matches = regex.exec(ffmpegM3u8File)) {
+          output.push(matches[1]);
         }
-        currentTranscodingIndex = count + offset;
+        
+        if (output.length > 0) {
+          currentTranscodingIndex = parseInt(output[output.length - 1], 10);
+        } else {
+          currentTranscodingIndex = 0;
+        }
         // eslint-disable-next-line no-empty
       } catch (err) {
         // console.log(err);
