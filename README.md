@@ -1,6 +1,6 @@
 # node-rtsp-to-hls-server
 Resteam VOD RTSP to seekable HLS using Node and ffmpeg  
-Only for VOD streams and therefore stream must have a total duration.  
+Only for VOD streams and therefore the input stream must have a total duration.  
 Doesn't support live streams.  
 Using https://github.com/kono0514/FFmpeg-custom-segmenter
 <br />
