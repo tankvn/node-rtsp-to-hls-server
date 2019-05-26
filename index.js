@@ -72,7 +72,6 @@ class Stream {
           reject(probeErr);
         } else {
           this.metadataDuration = metadata.format.duration;
-          console.log(this.metadataDuration);
           resolve(Stream.generateM3U8(this.metadataDuration, this.streamIdentifier));
         }
       });
@@ -225,7 +224,7 @@ class Stream {
 }
 
 class StreamSegmentPoller {
-  constructor(streamSegmentFilename, successCallback, errorCallback) {
+  constructor(streamSegmentFilename) {
     this.filename = streamSegmentFilename;
     this.streamIdentifier = this.filename.substring(0, 8);
     this.segmentIndex = parseInt(this.filename.substring(8).split('.')[0], 10);
@@ -237,14 +236,11 @@ class StreamSegmentPoller {
     }
     this.maxTries = hlsSegmentDuration * 2 < 10 ? 10 : hlsSegmentDuration * 2;
     this.currentTry = 0;
-    this.errorCallback = errorCallback;
-    this.successCallback = successCallback;
     this.updateActivity();
   }
 
   async poll() {
     while (this.currentTry <= this.maxTries) {
-      console.log(this.currentTry);
       this.currentTry += 1;
 
       console.log(colors.cyan('Polling'), this.streamIdentifier, this.segmentIndex);
@@ -313,7 +309,6 @@ class StreamSegmentPoller {
           this.streamObject.selfDestructTimer = null;
         }
         this.streamObject.seekToSegment = this.segmentIndex;
-        console.log('Waiting for spawn');
         try {
           // eslint-disable-next-line no-await-in-loop
           await this.streamObject.spawn();
