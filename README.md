@@ -29,4 +29,4 @@ This makes output stream doesn't work well on all players. [See break_non_keyfra
 | MPV | :heavy_check_mark: Works |
 | VLC | :heavy_exclamation_mark: Stutters between each segment switch points |
 | hls.js | :heavy_check_mark: Works |
-| Samsung Tizen TV (AVPlay) | :grey_question: Needs testing... |
+| Samsung Tizen TV (AVPlay) | :heavy_check_mark: Works |
