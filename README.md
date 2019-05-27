@@ -15,7 +15,9 @@ npm install
 ## Test stream
 1. Change rtsp_transport from "udp" to "tcp" in index.js
 2. ```node index.js```
-3. ```mpv http://0.0.0.0:8000/watch.m3u8?url=rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov```
+3. ```mpv http://0.0.0.0:8000/watch.m3u8?url=rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mov```  
+or pass the url as a url-encoded filename  
+```mpv http://0.0.0.0:8000/rtsp%3A%2F%2Fwowzaec2demo.streamlock.net%2Fvod%2Fmp4%3ABigBuckBunny_115k.mov.m3u8```
 
 ## Issues
 - Doesn't play smoothly on every player. [#1](https://github.com/kono0514/node-rtsp-to-hls-server/issues/1)  

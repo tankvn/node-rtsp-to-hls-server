@@ -16,9 +16,9 @@ const ffmpegPath = isWin ? 'ffmpeg_build/ffmpeg.exe' : 'ffmpeg_build/ffmpeg'; //
 const ffprobePath = isWin ? 'ffmpeg_build/ffprobe.exe' : 'ffmpeg_build/ffprobe'; // if empty, calls ffprobe directly from your FFPROBE_PATH or PATH
 const transcodePath = 'transcoding-tmp/'; // Path for storing m3u8 and ts files
 const selfDestructDuration = 60; // Kill ffmpeg if no segment request is made in this duration
-const hlsSegmentDuration = 5;
+const hlsSegmentDuration = 3;
 const hlsSegmentMaxGap = 3; // Missing segment file count to trigger ffmpeg restart
-const maxProcess = 3; // Maximum stream to serve simultaneously
+const maxProcess = 10; // Maximum stream to serve simultaneously
 const streams = {};
 
 if (!fs.existsSync(transcodePath)) {
@@ -106,8 +106,12 @@ class Stream {
     }
 
     const outputOptions = [
+      '-map 0:v:0', // first video stream
+      '-map 0:a:0', // first audio stream
+      '-map 0:s?', // all subtitles
       '-c:v copy',
       '-c:a aac',
+      '-c:s copy',
       '-avoid_negative_ts disabled',
       '-break_non_keyframes 1',
       // '-bsf:v h264_mp4toannexb',
@@ -144,7 +148,7 @@ class Stream {
         this.ffmpegState = 'started';
         console.log(colors.green(`ffmpeg started successfully (${this.streamIdentifier}):`));
         // build a initial buffer to ensure smoother playback
-        setTimeout(resolve, hlsSegmentDuration * 2 * 1000);
+        setTimeout(resolve, hlsSegmentDuration * 4 * 1000);
       });
       this.process.on('stderr', (line) => {
         // console.log(line);
@@ -353,9 +357,19 @@ http.createServer(async (req, res) => {
     return res.end();
   }
 
-  if (uri === '/watch.m3u8') {
-    if (!query.url) {
-      console.log(colors.red('No URL param found in URL. Returning 500.'));
+  if (uri.indexOf('.m3u8') > -1) {
+    let streamUrl = '';
+    if (query.url) {
+      streamUrl = query.url;
+    } else {
+      // eslint-disable-next-line prefer-destructuring
+      streamUrl = uri.split('.m3u8')[0];
+      streamUrl = streamUrl.substr(1);
+      streamUrl = decodeURIComponent(streamUrl);
+    }
+
+    if (streamUrl === '') {
+      console.log(colors.red('No stream found in URL. Returning 500.'));
       res.writeHead(500);
       return res.end();
     }
@@ -366,7 +380,6 @@ http.createServer(async (req, res) => {
       return res.end();
     }
 
-    const streamUrl = query.url;
     const streamIdentifier = uniqueFilename('');
     const streamObject = new Stream(streamUrl, streamIdentifier, 0, () => {});
     try {
